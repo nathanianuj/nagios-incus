@@ -18,12 +18,10 @@ Including an example of how to use your role (for instance, with variables passe
 
 License
 -------
-
 BSD
 
 Author Information
 ------------------
-
 An optional section for the role authors to include contact information, or a website (HTML is not allowed).
 
 
@@ -47,7 +45,6 @@ Requirements
 
 Role Variables
 --------------
-
 These variables can be customized in your inventory, playbook, or included in `defaults/main.yml` or `vars/main.yml`.
 
 ```yaml
@@ -58,7 +55,6 @@ priv_pass: myPrivPass456       # Encryption password (AES)
 
 Dependencies
 ------------
-
 None. This role is self-contained and does not rely on other Galaxy roles.
 
 Example Playbook
@@ -79,7 +75,7 @@ Master's in ICT & Internet Engineering, Rome, Italy
 
 DevOps | Cloud | Monitoring Enthusiast
 
-GitHub: https://github.com/anujnathani
+GitHub: https://github.com/nathanianuj
 
 
 Troubleshooting
@@ -100,7 +96,7 @@ ansible-galaxy install git+https://github.com/anujnathani/nagios-incus.git
 
 Or clone directly
 
-git clone https://github.com/anujnathani/nagios-incus.git
+git clone https://github.com/nathanianuj/nagios-incus.git
 cd nagios-incus
 ansible-playbook playbook.yml
 
@@ -111,4 +107,3 @@ Ubuntu 22.04 LTS
 
 Debian 11
 
-CentOS 8	
