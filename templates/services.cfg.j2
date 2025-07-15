@@ -1,0 +1,6 @@
+define service {
+           use                 generic-service
+           host_name           {{ switch_name }}
+           service_description SNMP Uptime
+           check_command       check_snmp_v3!{{ snmp_user }}!{{ auth_pass }}!{{ priv_pass }}!SHA!AES!SNMP Uptime!1.3.6.1.2.1.1.3.0
+         }

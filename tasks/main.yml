@@ -1,0 +1,214 @@
+#SPDX-License-Identifier: MIT-0
+# tasks file for nagios-incus
+
+---
+# main task file for nagios-incus role
+
+- name: Install dependencies
+  apt:
+    name:
+      - autoconf
+      - gcc
+      - make
+      - unzip
+      - apache2
+      - apache2-utils
+      - libgd-dev
+      - libmcrypt-dev
+      - libssl-dev
+      - bc
+      - gawk
+      - dc
+      - build-essential
+      - libnet-snmp-perl
+      - gettext
+      - libapache2-mod-php
+      - php
+      - php-gd
+      - php-cli
+      - php-xml
+      - php-cgi
+      - libperl-dev
+      - daemon
+      - wget
+      - libpng-dev
+      - libcap2-bin
+    state: present
+    update_cache: yes
+
+- name: Print switch IP
+  debug:
+    msg: "Monitoring switch at {{ switch_ip }}"
+
+- name: Deploy host definition for {{ switch_name }}
+  template:
+    src: host.cfg.j2
+    dest: /usr/local/nagios/etc/objects/{{ switch_name }}.cfg
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart nagios
+
+- name: Deploy specific services for {{ switch_name }}
+  template:
+    src: switch_services.cfg.j2
+    dest: /usr/local/nagios/etc/objects/{{ switch_name }}_services.cfg
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart nagios
+
+- name: Deploy main Nagios config
+  template:
+    src: nagios.cfg.j2
+    dest: /usr/local/nagios/etc/nagios.cfg
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart nagios
+
+- name: Deploy commands configuration
+  template:
+    src: commands.cfg.j2
+    dest: /usr/local/nagios/etc/objects/commands.cfg
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart nagios
+
+- name: Deploy global services configuration
+  template:
+    src: services.cfg.j2
+    dest: /usr/local/nagios/etc/objects/services.cfg
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart nagios
+
+- name: Ensure host config is included in nagios.cfg
+  lineinfile:
+    path: /usr/local/nagios/etc/nagios.cfg
+    regexp: "^cfg_file=/usr/local/nagios/etc/objects/{{ switch_name }}.cfg"
+    line: "cfg_file=/usr/local/nagios/etc/objects/{{ switch_name }}.cfg"
+    insertafter: EOF
+
+- name: Ensure service config is included in nagios.cfg
+  lineinfile:
+    path: /usr/local/nagios/etc/nagios.cfg
+    regexp: "^cfg_file=/usr/local/nagios/etc/objects/{{ switch_name }}_services.cfg"
+    line: "cfg_file=/usr/local/nagios/etc/objects/{{ switch_name }}_services.cfg"
+    insertafter: EOF
+
+- name: Deploy Apache config for Nagios
+  template:
+    src: apache-nagios.conf.j2
+    dest: /etc/apache2/sites-available/nagios.conf
+  notify: restart apache
+
+# Start of SNMPv3 setup
+
+- name: Stop SNMP service (only on vm2)
+  systemd:
+    name: snmpd
+    state: stopped
+  when: inventory_hostname == "vm2"
+
+- name: Ensure no snmpd processes are running (force kill)
+  shell: pkill -x snmpd || true
+
+- name: Wait for snmpd to fully stop
+  shell: |
+    while pgrep -x snmpd > /dev/null; do sleep 1; done
+  retries: 5
+  delay: 2
+  register: wait_result
+  until: wait_result.rc == 0
+
+- name: Backup original snmpd.conf
+  copy:
+    src: /etc/snmp/snmpd.conf
+    dest: /etc/snmp/snmpd.conf.bak
+    remote_src: yes
+  ignore_errors: yes
+
+- name: Check if /etc/snmp/snmpd.conf exists
+  stat:
+    path: /etc/snmp/snmpd.conf
+  register: snmpd_conf_stat
+
+- name: Read current snmpd.conf if it exists
+  slurp:
+    path: /etc/snmp/snmpd.conf
+  register: snmpd_conf_content
+  when: snmpd_conf_stat.stat.exists | default(false)
+
+- name: Set current_snmpd_conf variable (decoded content)
+  set_fact:
+    current_snmpd_conf: "{{ snmpd_conf_content.content | b64decode }}"
+  when: snmpd_conf_stat.stat.exists | default(false)
+
+- name: Define desired_snmpd_conf content
+  set_fact:
+    desired_snmpd_conf: |
+      sysLocation    "Incus Test Lab"
+      sysContact     "anuj@example.com"
+      sysServices    72
+      master agentx
+      agentAddress udp:0.0.0.0:161
+      view   all  included   .1
+      rouser {{ snmp_user }} authPriv -V all
+      includeDir /etc/snmp/snmpd.conf.d
+
+- name: Deploy snmpd.conf only if different
+  copy:
+    content: "{{ desired_snmpd_conf }}"
+    dest: /etc/snmp/snmpd.conf
+    owner: root
+    group: root
+    mode: '0644'
+  when: current_snmpd_conf is not defined or (current_snmpd_conf | trim) != (desired_snmpd_conf | trim)
+
+- name: Check if UFW is installed
+  stat:
+    path: /usr/sbin/ufw
+  register: ufw_check
+
+- name: Allow SNMP port in UFW if UFW is installed
+  ufw:
+    rule: allow
+    port: 161
+    proto: udp
+  when: ufw_check.stat.exists
+
+- name: Add SNMPv3 user (only on vm2)
+  command: >
+    net-snmp-config --create-snmpv3-user -ro -a SHA -A {{ auth_pass }} -x AES -X {{ priv_pass }} {{ snmp_user }}
+  when: inventory_hostname == 'vm2'
+  register: snmpv3_add
+  changed_when: "'already exists' not in snmpv3_add.stdout"
+
+- name: Start SNMP service
+  systemd:
+    name: snmpd
+    state: started
+    enabled: yes
+
+- name: Test SNMPv3 user locally
+  command: >
+    snmpwalk -v3 -l authPriv -u {{ snmp_user }} -a SHA -A {{ auth_pass }} -x AES -X {{ priv_pass }} localhost
+  register: snmp_test
+  changed_when: false
+  ignore_errors: yes
+  when: inventory_hostname == "vm2"
+
+- name: Test SNMPv3 user from vm1 to vm2
+  command: >
+    snmpwalk -v3 -l authPriv -u {{ snmp_user }} -a SHA -A {{ auth_pass }} -x AES -X {{ priv_pass }} 192.168.135.97
+  register: snmp_test
+  ignore_errors: yes
+  when: inventory_hostname == "vm1"
+
+- name: Show SNMPv3 test output
+  debug:
+    var: snmp_test.stdout
+  when: snmp_test is defined and snmp_test.stdout is defined

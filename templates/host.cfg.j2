@@ -1,0 +1,6 @@
+define host {
+  use             linux-server
+  host_name       {{ switch_name }}
+  alias           Monitored Switch
+  address         {{ switch_ip }}
+}

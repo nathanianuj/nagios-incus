@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: MIT-0
+ScriptAlias /nagios/cgi-bin /usr/local/nagios/sbin
+<Directory "/usr/local/nagios/sbin">
+    Options ExecCGI
+    AllowOverride None
+    Require all granted
+</Directory>
+
+Alias /nagios /usr/local/nagios/share
+<Directory "/usr/local/nagios/share">
+    Options None
+    AllowOverride None
+    Require all granted
+</Directory>
+
+<Directory "/usr/local/nagios/etc">
+    Options None
+    AllowOverride None
+    Require all granted
+</Directory>

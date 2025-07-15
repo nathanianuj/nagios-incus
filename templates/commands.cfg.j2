@@ -1,0 +1,6 @@
+define command {
+  command_name    check_snmpv3
+  command_line    $USER1$/check_snmp -v 3 -l $ARG1$ -u $ARG2$ -a $ARG3$ -A $ARG4$ -x $ARG5$ -X $ARG6$ -o $ARG7$
+}
+
+# You can add other command definitions here as well

@@ -1,0 +1,41 @@
+define service {
+  use                     generic-service
+  host_name               {{ switch_name }}
+  service_description     System Uptime
+  check_command           check_snmpv3!-l authPriv -u {{ snmp_user }} -a SHA -A {{ auth_pass }} -x AES -X {{ priv_pass }} -o 1.3.6.1.2.1.1.3.0
+}
+
+define service {
+  use                     generic-service
+  host_name               {{ switch_name }}
+  service_description     CPU Load
+  check_command           check_snmpv3!-l authPriv -u {{ snmp_user }} -a SHA -A {{ auth_pass }} -x AES -X {{ priv_pass }} -o 1.3.6.1.4.1.9.2.1.57.0
+}
+
+define service {
+  use                     generic-service
+  host_name               {{ switch_name }}
+  service_description     Memory Usage
+  check_command           check_snmpv3!-l authPriv -u {{ snmp_user }} -a SHA -A {{ auth_pass }} -x AES -X {{ priv_pass }} -o 1.3.6.1.4.1.2021.4.6.0
+}
+
+define service {
+  use                     generic-service
+  host_name               {{ switch_name }}
+  service_description     Interface 1 Status
+  check_command           check_snmpv3!-l authPriv -u {{ snmp_user }} -a SHA -A {{ auth_pass }} -x AES -X {{ priv_pass }} -o 1.3.6.1.2.1.2.2.1.8.1
+}
+
+define service {
+  use                     generic-service
+  host_name               {{ switch_name }}
+  service_description     Device Temperature
+  check_command           check_snmpv3!-l authPriv -u {{ snmp_user }} -a SHA -A {{ auth_pass }} -x AES -X {{ priv_pass }} -o 1.3.6.1.4.1.9.9.13.1.3.1.3.1
+}
+
+define service {
+  use                     generic-service
+  host_name               {{ switch_name }}
+  service_description     Power Supply 1 Status
+  check_command           check_snmpv3!-l authPriv -u {{ snmp_user }} -a SHA -A {{ auth_pass }} -x AES -X {{ priv_pass }} -o 1.3.6.1.4.1.9.9.13.1.5.1.2.1
+}

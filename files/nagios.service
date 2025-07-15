@@ -1,0 +1,14 @@
+[Unit]
+Description=Nagios Core Monitoring Tool
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/usr/local/nagios/bin/nagios /usr/local/nagios/etc/nagios.cfg
+ExecReload=/bin/kill -HUP $MAINPID
+User=nagios
+Group=nagios
+PIDFile=/usr/local/nagios/var/nagios.lock
+
+[Install]
+WantedBy=multi-user.target

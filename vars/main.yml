@@ -1,0 +1,17 @@
+#SPDX-License-Identifier: MIT-0
+---
+# vars file for nagios-incus
+# nagios-setup-final.yaml
+
+nagios_version: "4.4.7"
+nagios_plugins_version: "2.3.3"
+nagios_user: "nagios"
+nagios_group: "nagcmd"
+nagios_admin_password: "nagiosadmin"
+
+snmp_user: authPrivUser
+auth_pass: myAuthPass123
+priv_pass: myPrivPass456
+switch_ip: "192.168.135.97"
+switch_name: core-switch
+
